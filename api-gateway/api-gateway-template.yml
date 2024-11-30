@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Api gateway for the application
+
+Parameters:
+  Region:
+    Description: Region where this resource will be deployed
+    Type: String
+    Default: us-west-2
+  SpotifyApiLambda:
+    Description: The arn of the lambda that calls spotify api
+    Type: String
+    
+Resources:
+
+  SpotifyIntegrationApiGatewayRole:
+    type: AWS::IAM::ROLE
+    properties:
+      AssumeRolePolicyDocument:
+        version: '2012-10-17'
+        Statement:
+          - Sid: ''
+          Effect: 'Allow'
+          Principal:
+            service:
+              - 'apigateway.amazonaws.com'
+          Action:
+            - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: LambdaAccess
+          PolicyDocument:
+            version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'lambda:*'
+                Resource: !Ref SpotifyApiLambda
+
+  SpotifyIntegrationApiGateway:
+    DependsOn: SpotifyIntegrationApiGatewayRole
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: SpotifyIntegrationAPI
+      Body: 
+        OpenAPI specification:
+          paths:
+            /healthcheck: 
+              get:
+                summary: healthcheck endpoint
+                operationId: getHealthcheck
+                responses:
+                  '200':
+                    description: "200 response"
+                    headers:
+                      Access-Control-Allow-Origin: *
+                    content:
+                      application/json: {status:'ok'}
+            /track:
+              get:
+                x-amazon-apigateway-integration:
+                  type: AWS_PROXY
+                  httpMethod: POST
+                  uri: !Ref SpotifyApiLambda
+                summary: Get the information of a specific track
+                operationId: getTrack
+                responses:
+      Description: Api gateway for the application
+      DisableExecuteApiEndpoint: False
+      FailOnWarnings: False
+      Policy: Json
+      Tags: 
+        - SpotifyIntegration
+
+Outputs:
+  SpotifyIntegrationApiGateway:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value: !Ref SpotifyIntegrationApiGateway

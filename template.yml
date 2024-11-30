@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  SpotifyLambdaStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: './lambda-spotify-api/lambda-template.yml'
+      Parameters:
+        Environment: 'dev'
+
+  SpotifyApigatewayStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: './api-gateway/api-gateway-template.yml'
+      Parameters:
+        Environment: 'dev'
+        SpotifyApiLambda: !GetAtt [SpotifyLambdaStack,Outputs.SpotifyApiFunction]
+    DependsOn: SpotifyLambdaStack
