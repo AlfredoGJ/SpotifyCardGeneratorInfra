@@ -1,0 +1,77 @@
+openapi: "3.0.1"
+info:
+  title: "spotify-integration-api"
+  version: "1.0"
+
+paths:
+  /healthcheck:
+    get:
+      summary: healthcheck endpoint
+      operationId: getHealthcheck
+      responses:
+        200:
+          description: Succesful operation
+          headers:
+            Access-Control-Allow-Origin: "'*'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Healthcheck"
+  /track:
+    get:
+      x-amazon-apigateway-integration:
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SpotifyApiLambda}/invocations"
+        passthroughBehavior: "when_no_match"
+      summary: Get the information of a specific track
+      operationId: getTrack
+      responses:
+        200:
+          description: Succesful operation
+          headers:
+            Access-Control-Allow-Origin: "*"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Healthcheck"
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      x-amazon-apigateway-integration:
+        type: "mock"
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "{}\n"
+        requestTemplates:
+          application/json: "{\n  \"statusCode\" : 200\n}\n"
+        passthroughBehavior: "when_no_match"
+
+components:
+  schemas:
+    Healthcheck:
+      type: object
+      properties:
+        status:
+          type: string
+        statusValue:
+          type: string

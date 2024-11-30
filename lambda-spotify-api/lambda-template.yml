@@ -32,7 +32,5 @@ Outputs:
 
   SpotifyApiFunction:
     Description: Spotify Api Lambda Function ARN
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+    Value: !GetAtt SpotifyApiFunction.Arn
+

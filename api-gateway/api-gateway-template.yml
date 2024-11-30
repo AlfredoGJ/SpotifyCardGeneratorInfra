@@ -1,75 +1,40 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: Api gateway for the application
 
 Parameters:
-  Region:
-    Description: Region where this resource will be deployed
-    Type: String
-    Default: us-west-2
   SpotifyApiLambda:
     Description: The arn of the lambda that calls spotify api
     Type: String
-    
+  Environment:
+    Description: The environment where this resource is deployed
+    Type: String
+
 Resources:
-
-  SpotifyIntegrationApiGatewayRole:
-    type: AWS::IAM::ROLE
-    properties:
-      AssumeRolePolicyDocument:
-        version: '2012-10-17'
-        Statement:
-          - Sid: ''
-          Effect: 'Allow'
-          Principal:
-            service:
-              - 'apigateway.amazonaws.com'
-          Action:
-            - 'sts:AssumeRole'
-      Path: '/'
-      Policies:
-        - PolicyName: LambdaAccess
-          PolicyDocument:
-            version: '2012-10-17'
-            Statement:
-              - Effect: 'Allow'
-                Action: 'lambda:*'
-                Resource: !Ref SpotifyApiLambda
-
   SpotifyIntegrationApiGateway:
-    DependsOn: SpotifyIntegrationApiGatewayRole
-    Type: AWS::ApiGateway::RestApi
+    Type: AWS::Serverless::Api
     Properties:
       Name: SpotifyIntegrationAPI
-      Body: 
-        OpenAPI specification:
-          paths:
-            /healthcheck: 
-              get:
-                summary: healthcheck endpoint
-                operationId: getHealthcheck
-                responses:
-                  '200':
-                    description: "200 response"
-                    headers:
-                      Access-Control-Allow-Origin: *
-                    content:
-                      application/json: {status:'ok'}
-            /track:
-              get:
-                x-amazon-apigateway-integration:
-                  type: AWS_PROXY
-                  httpMethod: POST
-                  uri: !Ref SpotifyApiLambda
-                summary: Get the information of a specific track
-                operationId: getTrack
-                responses:
+      StageName: dev
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
       Description: Api gateway for the application
       DisableExecuteApiEndpoint: False
       FailOnWarnings: False
-      Policy: Json
-      Tags: 
-        - SpotifyIntegration
+      DefinitionBody:
+        Fn:Transform:
+          Name: "AWS::Include"
+          Parameters:
+            Location: ./api-definition.yml
+
+  SpotifyApiLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SpotifyApiLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${SpotifyIntegrationApiGateway}:${Environment}:POST/*"
 
 Outputs:
   SpotifyIntegrationApiGateway:
