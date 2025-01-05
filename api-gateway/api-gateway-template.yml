@@ -15,7 +15,8 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       Name: SpotifyIntegrationAPI
-      StageName: dev
+      StageName: 
+        Ref: Environment
       Cors:
         AllowMethods: "'*'"
         AllowHeaders: "'*'"
@@ -23,10 +24,113 @@ Resources:
       DisableExecuteApiEndpoint: False
       FailOnWarnings: False
       DefinitionBody:
-        Fn:Transform:
-          Name: "AWS::Include"
-          Parameters:
-            Location: ./api-definition.yml
+        openapi: "3.0.1"
+        info:
+          title: "Spotify api integration"
+          version: "1.0"
+
+        paths:
+          /healthcheck:
+            get:
+              summary: healthcheck endpoint
+              operationId: getHealthcheck
+              responses: 
+                "200":
+                  description: "200 response"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content: {}
+
+              x-amazon-apigateway-integration:
+                type: "mock"
+                responses:
+                  "200":
+                    statusCode: 200
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'*'"
+                      method.response.header.Access-Control-Allow-Headers: "'*'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                    responseTemplates:
+                      application/json: "{\n  \"statusCode\" : 200\n}\n" 
+                passthroughBehavior: "when_no_match"
+
+          /getInfo:
+            get:
+              summary: Get the information of a specific track, album or playlist
+              operationId: getInfo
+              x-amazon-apigateway-integration:
+                type: "aws_proxy"
+                httpMethod: "POST"
+                uri:
+                  Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SpotifyApiLambda}/invocations"
+                passthroughBehavior: "when_no_match"
+              
+              parameters:
+                - in: query
+                  name: playlistId
+                  schema:
+                    type: string
+                  description: The spotify ID of the playlist.
+                
+                - in: query
+                  name: trackId
+                  schema:
+                    type: string
+                  description: The spotify ID of the track.
+
+                - in: query
+                  name: albumId
+                  schema:
+                    type: string
+                  description: The spotify  ID of the album.
+
+
+              responses:
+                "200":
+                  description: Succesful operation
+                  headers:
+                    Access-Control-Allow-Origin: "*"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Healthcheck"
+            options:
+              responses:
+                "200":
+                  description: "200 response"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content: {}
+              x-amazon-apigateway-integration:
+                type: "mock"
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'*'"
+                      method.response.header.Access-Control-Allow-Headers: "'*'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                    responseTemplates:
+                      application/json: "{}\n"
+                requestTemplates:
+                  application/json: "{\n  \"statusCode\" : 200\n}\n"
+                passthroughBehavior: "when_no_match"
 
   SpotifyApiLambdaPermission:
     Type: AWS::Lambda::Permission
@@ -34,9 +138,9 @@ Resources:
       FunctionName: !Ref SpotifyApiLambda
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${SpotifyIntegrationApiGateway}:${Environment}:POST/*"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${SpotifyIntegrationApiGateway}/*/GET/getInfo"
 
 Outputs:
   SpotifyIntegrationApiGateway:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Description: API Gateway endpoint URL for Prod stage for Spotify api function
     Value: !Ref SpotifyIntegrationApiGateway

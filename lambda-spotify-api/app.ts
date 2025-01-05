@@ -1,4 +1,13 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { SpotifyApi } from '@spotify/web-api-ts-sdk';
+import { allowedScopes } from './utils';
+import { getToken, getTrackDto, isTokenExpired } from './utils/utils';
+import { request } from 'https';
+import { METHODS } from 'http';
+import { getTrack } from './utils/api';
+
+// const spotifySdk = SpotifyApi.withClientCredentials(process.env.CLIENT_ID!, process.env.CLIENT_SECRET!, allowedScopes);
+
 /**
  *
  * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
@@ -10,19 +19,39 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
  */
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    try {
+    if (event.queryStringParameters) {
+        try {
+            const token = await getToken();
+            console.log('Access Token:', token);
+            if (event.queryStringParameters.trackId) {
+                const { trackId } = event.queryStringParameters;
+                const track = await getTrack(trackId, token!);
+                console.log("Track From API", track)
+                return {
+                    statusCode: 200,
+                    body: JSON.stringify({ track: getTrackDto(track) }),
+                };
+            }
+            return {
+                statusCode: 500,
+                body: JSON.stringify({
+                    message: 'Not implemented yet',
+                }),
+            };
+        } catch (err) {
+            console.log(err);
+            return {
+                statusCode: 500,
+                body: JSON.stringify({
+                    message: `some error happened: ${err} `,
+                }),
+            };
+        }
+    } else {
         return {
-            statusCode: 200,
+            statusCode: 400,
             body: JSON.stringify({
-                message: 'hello  from lambda',
-            }),
-        };
-    } catch (err) {
-        console.log(err);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({
-                message: 'some error happened',
+                message: 'Missing query parameters in request',
             }),
         };
     }
