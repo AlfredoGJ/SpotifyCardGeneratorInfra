@@ -1,0 +1,16 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Environment:
+    Type: String
+    Description: The environment where this resource is deployed
+  
+Resources:
+  SpotifyIntegrarionBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${Environment}-spotify-integration-bucket"
+
+Outputs:
+  S3BucketArn:
+    Description: The ARN of the S3 bucket
+    Value: !GetAtt SpotifyIntegrarionBucket.Arn

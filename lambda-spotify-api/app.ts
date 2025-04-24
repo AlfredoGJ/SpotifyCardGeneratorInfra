@@ -1,12 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { SpotifyApi } from '@spotify/web-api-ts-sdk';
-import { allowedScopes } from './utils';
-import { getToken, getTrackDto, isTokenExpired } from './utils/utils';
-import { request } from 'https';
-import { METHODS } from 'http';
-import { getTrack } from './utils/api';
+import { getAlbumDto, getTrackDto } from './utils/utils';
+import { get } from './utils/api';
+import { getToken } from './utils/auth';
+import withHeaders from './utils/addHeaders';
+import { configDotenv } from 'dotenv';
 
-// const spotifySdk = SpotifyApi.withClientCredentials(process.env.CLIENT_ID!, process.env.CLIENT_SECRET!, allowedScopes);
+configDotenv()
 
 /**
  *
@@ -25,34 +24,43 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
             console.log('Access Token:', token);
             if (event.queryStringParameters.trackId) {
                 const { trackId } = event.queryStringParameters;
-                const track = await getTrack(trackId, token!);
-                console.log("Track From API", track)
-                return {
+                const track = await get('track',trackId, token!);
+                console.log('Track From API', track);
+                return withHeaders({
                     statusCode: 200,
                     body: JSON.stringify({ track: getTrackDto(track) }),
-                };
+                });
             }
-            return {
+            if(event.queryStringParameters.albumId){
+                const {albumId} = event.queryStringParameters
+                const album = await get('album',albumId, token!);
+                console.log('Album From API', albumId);
+                return withHeaders({
+                    statusCode:200,
+                    body: JSON.stringify({album:getAlbumDto(album)})
+                })
+            }
+            return withHeaders({
                 statusCode: 500,
                 body: JSON.stringify({
                     message: 'Not implemented yet',
                 }),
-            };
+            });
         } catch (err) {
             console.log(err);
-            return {
+            return withHeaders({
                 statusCode: 500,
                 body: JSON.stringify({
                     message: `some error happened: ${err} `,
                 }),
-            };
+            });
         }
     } else {
-        return {
+        return withHeaders({
             statusCode: 400,
             body: JSON.stringify({
                 message: 'Missing query parameters in request',
             }),
-        };
+        });
     }
 };

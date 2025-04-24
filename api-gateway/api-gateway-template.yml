@@ -15,7 +15,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       Name: SpotifyIntegrationAPI
-      StageName: 
+      StageName:
         Ref: Environment
       Cors:
         AllowMethods: "'*'"
@@ -34,7 +34,7 @@ Resources:
             get:
               summary: healthcheck endpoint
               operationId: getHealthcheck
-              responses: 
+              responses:
                 "200":
                   description: "200 response"
                   headers:
@@ -52,14 +52,14 @@ Resources:
               x-amazon-apigateway-integration:
                 type: "mock"
                 responses:
-                  "200":
-                    statusCode: 200
+                  default:
+                    statusCode: "200"
                     responseParameters:
                       method.response.header.Access-Control-Allow-Methods: "'*'"
                       method.response.header.Access-Control-Allow-Headers: "'*'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
                     responseTemplates:
-                      application/json: "{\n  \"statusCode\" : 200\n}\n" 
+                      application/json: "{\n  \"statusCode\" : 200\n}\n"
                 passthroughBehavior: "when_no_match"
 
           /getInfo:
@@ -68,18 +68,25 @@ Resources:
               operationId: getInfo
               x-amazon-apigateway-integration:
                 type: "aws_proxy"
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'*'"
+                      method.response.header.Access-Control-Allow-Headers: "'*'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
                 httpMethod: "POST"
                 uri:
                   Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SpotifyApiLambda}/invocations"
                 passthroughBehavior: "when_no_match"
-              
+
               parameters:
                 - in: query
                   name: playlistId
                   schema:
                     type: string
                   description: The spotify ID of the playlist.
-                
+
                 - in: query
                   name: trackId
                   schema:
@@ -92,12 +99,19 @@ Resources:
                     type: string
                   description: The spotify  ID of the album.
 
-
               responses:
                 "200":
                   description: Succesful operation
                   headers:
-                    Access-Control-Allow-Origin: "*"
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
                   content:
                     application/json:
                       schema:

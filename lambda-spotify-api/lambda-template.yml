@@ -1,36 +1,63 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  lambda-spotify-api
+    lambda-spotify-api
 
-  Sample SAM Template for lambda-spotify-api
-
+    Sample SAM Template for lambda-spotify-api
 
 Parameters:
-  Environment:
-    Type: String
+    Environment:
+        Type: String
+        Description: The environment where this resource is deployed
+    S3BucketArn:
+        Type: String
+        Description: The ARN of the S3 bucket where the lambda code is stored
 
 Resources:
-  SpotifyApiFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-    Properties:
-      CodeUri: ./
-      Handler: app.lambdaHandler
-      Runtime: nodejs18.x
-      Architectures:
-      - x86_64
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: es2020
-        Sourcemap: true
-        EntryPoints:
-        - app.ts
+    SpotifyApiLambdaExecutionRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Sub '${Environment}-spotify-api-lambda-execution-role'
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Service: lambda.amazonaws.com
+                      Action: sts:AssumeRole
+            Policies:
+                - PolicyName: !Sub '${Environment}-spotify-api-lambda-execution-policy'
+                  PolicyDocument:
+                      Version: '2012-10-17'
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - s3:GetObject
+                                - s3:PutObject
+                                - s3:ListBucket
+                            Resource: !Sub '${S3BucketArn}/*'
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole # This policy is used to write logs to CloudWatch
+
+    SpotifyApiFunction:
+        Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+        Properties:
+            Role: !GetAtt SpotifyApiLambdaExecutionRole.Arn
+            CodeUri: ./
+            Handler: app.lambdaHandler
+            Runtime: nodejs18.x
+            Architectures:
+                - x86_64
+        Metadata: # Manage esbuild properties
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: es2020
+                Sourcemap: true
+                EntryPoints:
+                    - app.ts
 
 Outputs:
-
-  SpotifyApiFunction:
-    Description: Spotify Api Lambda Function ARN
-    Value: !GetAtt SpotifyApiFunction.Arn
-
+    SpotifyApiFunction:
+        Description: Spotify Api Lambda Function ARN
+        Value: !GetAtt SpotifyApiFunction.Arn

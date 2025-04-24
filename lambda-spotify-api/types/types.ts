@@ -36,8 +36,10 @@ enum ContentType {
 }
 
 type ArtistDto = Pick<Artist, 'name' | 'id' | 'type' | 'images'>;
-type AlbumDto = Pick<Album, 'name' | 'id' | 'genres' | 'release_date' | 'total_tracks' | 'images'> & {
+type AlbumDto = Pick<Album, 'name' | 'id' | 'genres' | 'release_date' | 'total_tracks' | 'images' | 'label'> & {
     artists: Array<ArtistDto>;
+    tracks: Array<SimplifiedTrack>,
+    scannables: Scannable[]
 };
 type SimplifiedAlbum = {
     name: string;
@@ -55,5 +57,11 @@ type Track = {
     scannables: Scannable[];
 };
 
-export type { AccessToken, ArtistDto, AlbumDto, Track, SimplifiedAlbum, SimplifiedArtist, Scannable };
+type SimplifiedTrack = {
+    name: string;
+    duration_ms: number;
+    track_number: number;
+};
+
+export type { AccessToken, ArtistDto, AlbumDto, Track, SimplifiedAlbum, SimplifiedArtist, Scannable, SimplifiedTrack };
 export { ImageSizes, ContentType };

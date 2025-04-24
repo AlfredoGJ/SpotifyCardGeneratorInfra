@@ -2,12 +2,20 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 
 Resources:
+  SotifyS3Stack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./s3/s3-template.yml"
+      Parameters:
+        Environment: "dev"
+
   SpotifyLambdaStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: "./lambda-spotify-api/lambda-template.yml"
       Parameters:
         Environment: "dev"
+        S3BucketArn: !GetAtt SotifyS3Stack.Outputs.S3BucketArn
 
   SpotifyApigatewayStack:
     Type: "AWS::CloudFormation::Stack"
